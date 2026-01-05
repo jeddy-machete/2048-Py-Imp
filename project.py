@@ -1,5 +1,6 @@
 #TODO: 1/3/26 frontend; IDK how.  Lets cross that bridge after a minute.
 #Flask is the most popular lightweight web framework. It gives you more control than Streamlit but requires learning some HTML. It's versatile and widely used for everything from simple sites to APIs.
+#TODO: add "README.md" file @ root of project
 
 import numpy as np
 from numpy import zeros
@@ -11,7 +12,7 @@ from numpy import zeros
     #random filling
     #moving
 
-#driver loop
+#driver loop; see todo above
 
 class board_game_2048():
     def __init__(self):
