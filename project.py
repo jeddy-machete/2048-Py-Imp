@@ -1,28 +1,45 @@
 #TODO: 1/3/26 frontend; IDK how.  Lets cross that bridge after a minute.
 #Flask is the most popular lightweight web framework. It gives you more control than Streamlit but requires learning some HTML. It's versatile and widely used for everything from simple sites to APIs.
-#TODO: add "README.md" file @ root of project
 
 import numpy as np
-from numpy import zeros
-
-#structure
-
-#board global vars
-#board methods
-    #random filling
-    #moving
-
-#driver loop; see todo above
-
+from numpy import zeros, rot90, array
+from random import randint, random
 
 #####################################
-#global vars
-game_board = zeros((4,4), dtype = int)
-game_over = False
+#game loop
+
+#TODO: get up n running
+def game_loop():
+    #init
+    game_board = zeros((4,4), dtype = int)
+    fill_cell(game_board)
+    fill_cell(game_board)
+
+    input_map = {'a' : 0, 'w' : 1, 'd' :2, 's' : 3} #WASD controls
+
+    while True:
+        if is_game_over(game_board):
+            break
+        print_board(game_board)
+        user_input = input("\nYour Move: ").lower().strip()
+        if user_input not in input_map:
+            print("Invalid input, use WASD for movement")
+            continue
+
+        old_board = game_board.copy()
+        game_board = move(game_board, input_map[user_input])
+
+        if not np.array_equal(old_board, game_board):
+            fill_cell(game_board)
+        else:
+            print("Invalid move: no tiles moved")
+
+    print_board(game_board)
+    print(f"Final Score: {np.sum(game_board)}")
+    user_input = input("\nPress any key to quit:")
 
 #####################################
 #Board Set procedures
-from random import randint, random
 def fill_cell(board):
     i, j = (board == 0).nonzero()   #other note; we're looking at all the zeros here
     if i.size != 0:
@@ -39,7 +56,6 @@ def reset_board():
 
 #####################################
 #Movement procedures
-from numpy import array, zeros
 def move_left(col):
     new_col = zeros((4), dtype = col.dtype)
     j = 0
@@ -61,7 +77,6 @@ def move_left(col):
         new_col[j] = prev
     return new_col
 
-from numpy import rot90
 def move(board, direction):
     #0 left; 1 up; 2 right; 3 down
     new_board = rot90(board, direction).copy()  #need call by val
@@ -73,7 +88,7 @@ def move(board, direction):
 #logic check procedure
 def is_game_over(board):
     #check for vacant space
-    if np.any(obj == 0):
+    if np.any(board == 0):
         return False
     #check for available merges
     else:
