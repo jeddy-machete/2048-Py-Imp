@@ -7,25 +7,21 @@ from numpy import zeros
 
 #structure
 
-#board obj
+#board global vars
 #board methods
     #random filling
     #moving
 
 #driver loop; see todo above
 
-class board_game_2048():
-    def __init__(self):
-        self.board = zeros((4,4), dtype = int)
-        self.game_over = False
 
-    def move(self, direction):
-        pass
+#####################################
+#global vars
+game_board = zeros((4,4), dtype = int)
+game_over = False
 
-    def is_game_over(self):
-        pass
-
-
+#####################################
+#Board Set procedures
 from random import randint, random
 def fill_cell(board):
     i, j = (board == 0).nonzero()   #other note; we're looking at all the zeros here
@@ -37,10 +33,12 @@ def fill_cell(board):
                 #  -> Random (1, P = 0.1) (0, P = 0.9)
             #Sum is multiplied by 2, producing either a 2 or 4
 
-def reset_board(board):
-    board.board = zeros((4,4), dtype = int)
-    board.game_over = False
+def reset_board():
+    game_board = zeros((4,4), dtype = int)
+    game_over = False
 
+#####################################
+#Movement procedures
 from numpy import array, zeros
 def move_left(col):
     new_col = zeros((4), dtype = col.dtype)
@@ -64,17 +62,35 @@ def move_left(col):
     return new_col
 
 from numpy import rot90
-#TODO: find and fix boo boo
 def move(board, direction):
-    #0 left
-    #1 up
-    #2 right
-    #3 down
-    print(board, "^board \n")
-    rotated_board = rot90(board, direction)
-    print(rotated_board"^ rotated_board \n")
-    cols = [rotated_board[i, :] for i in range(4)]
-
-    #print("this is cols \n", cols)
-    new_board = array([move_left(col) for col in cols]) #dense-as-hell filters
+    #0 left; 1 up; 2 right; 3 down
+    new_board = rot90(board, direction).copy()  #need call by val
+    for i in range(4):
+        new_board[i] = move_left(new_board[i])
     return rot90(new_board, -1 * direction)
+
+#####################################
+#logic check procedure
+def is_game_over(board):
+    #check for vacant space
+    if np.any(obj == 0):
+        return False
+    #check for available merges
+    else:
+        for i in range(3):
+            for j in range(3):
+                if (obj[i][j] == obj[i][j+1]
+                    or obj[i][j] == obj[i+1][j]):
+                    return False
+    return True
+
+#####################################
+#display procedure
+def print_board(board):
+    print("\n" + "="*17)
+    for row in board:
+        print("|", end = "")
+        for cell in row:
+            print(f"{cell:4}", end = "  ")
+        print(" |")
+    print("\n" + "="*17)
