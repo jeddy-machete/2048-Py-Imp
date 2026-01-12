@@ -9,7 +9,7 @@ from random import randint, random
 #game loop
 
 #TODO: get up n running
-def game_loop():
+def game_loop(): # text game loop
     #init
     game_board = zeros((4,4), dtype = int)
     fill_cell(game_board)
@@ -94,8 +94,8 @@ def is_game_over(board):
     else:
         for i in range(3):
             for j in range(3):
-                if (obj[i][j] == obj[i][j+1]
-                    or obj[i][j] == obj[i+1][j]):
+                if (board[i][j] == board[i][j+1]
+                    or board[i][j] == board[i+1][j]):
                     return False
     return True
 
