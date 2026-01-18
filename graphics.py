@@ -1,10 +1,8 @@
 #TODO 1/12/26:
 #   - add score counter above
-#   - Need game-over handler
 
 #TODO 1/14/26
 # want to add
-#   - pause interrupt
 #   - some sound functionality
 
 
@@ -20,7 +18,7 @@ class BoardObj:
         self.board = zeros((4,4), dtype = int)
         self.fill_cell()
         self.fill_cell()
-        print(self.board)
+#        print(self.board)
 
     def fill_cell(self):
         i, j = (self.board == 0).nonzero()   #other note; we're looking at all the zeros here
@@ -56,6 +54,19 @@ class BoardObj:
         for i in range(4):
             new_board[i] = self.move_left(new_board[i])
         self.board = rot90(new_board, -1 * direction)
+
+    def is_game_over(self):
+        #check for vacant space
+        if np.any(self.board == 0):
+            return False
+        #check for available merges
+        else:
+            for i in range(3):
+                for j in range(3):
+                    if (self.board[i][j] == self.board[i][j+1]
+                        or self.board[i][j] == self.board[i+1][j]):
+                        return False
+        return True
 
     def reset_board(self):
         self.board = zeros((4,4), dtype = int)
@@ -96,6 +107,9 @@ def game_window():
         window.fill(WHITE)
         draw_board(window, current_game, WIDTH, HEIGHT)
         pygame.display.flip()
+
+        if current_game.is_game_over():
+            gameover_handler(window, current_game, WIDTH, HEIGHT)
 
     pygame.quit()
 
@@ -151,6 +165,7 @@ def draw_board(window, board_obj, width, height):
 
 #######################################################
 #Powerhouse to display a bunch of prompts on the screen
+#handes multi-line prompts w/ '\n'
 def display_prompt(window, prompt, width, height):
     BOX_COLOR = (255, 51, 255)
     TEXT_COLOR = (0, 0, 0)
@@ -161,14 +176,38 @@ def display_prompt(window, prompt, width, height):
     #centering
     box_x = (width - box_width) // 2
     box_y = (height - box_height) // 2
-
     box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
     pygame.draw.rect(window, BOX_COLOR, box_rect, border_radius = 0)
 
+
     font = pygame.font.Font(None, 48)
-    text = font.render(prompt, False, TEXT_COLOR) #8 bit effect?
-    text_rect = text.get_rect(center = box_rect.center)
-    window.blit(text, text_rect)
+    lines = prompt.split('\n')
+    line_spacing = 5
+
+    #render all lines first to calc total height
+    rendered_lines = []
+    for line in lines:
+        rendered_lines.append(font.render(line, False, TEXT_COLOR))
+
+    #calc total text block height
+    total_height = sum(text_surface.get_height() for text_surface in rendered_lines)
+    total_height += line_spacing * (len(lines) - 1)
+
+    #start y pos
+    start_y = box_rect.centery - total_height // 2
+
+    #peicewise blitting
+    current_y = start_y
+    for text_surface in rendered_lines:
+        text_rect = text_surface.get_rect(centerx = box_rect.centerx, top = current_y)
+        window.blit(text_surface, text_rect)
+        current_y += text_surface.get_height() + line_spacing
+
+#supplemental powerhouse
+def display_prompt_and_render(window, prompt, board_obj, width, height):
+    draw_board(window, board_obj, width, height)
+    display_prompt(window, prompt, width, height)
+    pygame.display.flip()
 
 ########################################
 #handles events for keydown; passes to WASD_handler, R_handler, Q_handler
@@ -183,8 +222,7 @@ def keydown_handler(event, window, board_obj, width, height):
     elif event.key == pygame.K_r:   #reset
         R_handler(event, window, board_obj, width, height)
     elif event.key == pygame.K_p:
-        print("printing board")
-        board_obj.print_board()
+        pause_game(event, window, board_obj, width, height)
     else:
         pass
 
@@ -214,6 +252,7 @@ def R_handler(event, window, board_obj, width, height):
                      width,
                      height):
         display_prompt_and_render(window, "Resetting...", board_obj, width, height)
+        pygame.time.wait(1000)
         board_obj.reset_board()
     else:
         display_prompt_and_render(window, "A(board)ed", board_obj, width, height)
@@ -227,17 +266,24 @@ def Q_handler(event, window, board_obj, width, height):
                      width,
                      height):
         display_prompt_and_render(window, "Quitting, Goodbye", board_obj, width, height)
+        pygame.time.wait(1000)
         pygame.quit()
         sys.exit()  #triggers warnings ... ok
     else:
         display_prompt_and_render(window, "A(board)ed", board_obj, width, height)
 
-#helper funtion for R_handler, Q_handler
-def display_prompt_and_render(window, prompt, board_obj, width, height):
-    draw_board(window, board_obj, width, height)
-    display_prompt(window, prompt, width, height)
-    pygame.display.flip()
-    pygame.time.wait(1000)
+#Game over, restart or quit?
+def gameover_handler(window, board_obj, width, height):
+    prompt = "Game Over.\n Total score : " + str(np.sum(board_obj.board)) + ".\n New game? [y/n]"
+    if ask_yes_or_no(window, prompt, board_obj, width, height):
+        display_prompt_and_render(window, "Starting new game...", board_obj, width, height)
+        pygame.time.wait(1000)
+        board_obj.reset_board()
+    else:
+        display_prompt_and_render(window, "Quitting, Goodbye", board_obj, width, height)
+        pygame.time.wait(1000)
+        pygame.quit()
+        sys.exit()  #triggers warnings ... ok
 
 ############################################
 #handles yes or no questions for prompts
@@ -256,6 +302,23 @@ def ask_yes_or_no(window, prompt, board_obj, width, height):
                 elif event.key == pygame.K_n:
                     return False
 
-        draw_board(window, board_obj, width, height)
-        display_prompt(window, prompt, width, height)
-        pygame.display.flip()
+        display_prompt_and_render(window, prompt, board_obj, width, height)
+
+############################################
+# Game pause
+def pause_game(event, window, board_obj, width, height):
+    prompt = "Game paused"
+    display_prompt_and_render(window, prompt, board_obj, width, height)
+
+    waiting = True
+
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()  #triggers warnings ... ok
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    waiting = False
+
+        display_prompt_and_render(window, prompt, board_obj, width, height)
